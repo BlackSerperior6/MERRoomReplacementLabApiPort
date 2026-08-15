@@ -1,12 +1,11 @@
+using MapGeneration;
+using MERRoomReplacement.Api.Structures;
 using System.Collections.Generic;
 using System.ComponentModel;
-using Exiled.API.Enums;
-using Exiled.API.Interfaces;
-using MERRoomReplacement.Api.Structures;
 
 namespace MERRoomReplacement.Features.Configuration
 {
-    public class Config : IConfig
+    public class Config
     {
         [Description("Indicates plugin enabled or not")]
         public bool IsEnabled { get; set; } = true;
@@ -20,7 +19,7 @@ namespace MERRoomReplacement.Features.Configuration
             new RoomSchematic()
             {
                 IsEnabled = false,
-                TargetRoomType = RoomType.HczTestRoom,
+                TargetRoomType = RoomName.HczTesla,
                 SchematicName = "AwesomeSchematic",
                 SpawnChance = 50,
                 SpawnDelay = 1f,

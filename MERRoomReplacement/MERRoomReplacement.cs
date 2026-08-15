@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using Exiled.API.Features;
+using LabApi.Loader.Features.Plugins;
 using MERRoomReplacement.Events.Handlers;
 using MERRoomReplacement.Events.Interfaces;
 using MERRoomReplacement.Features.Configuration;
@@ -14,26 +14,24 @@ namespace MERRoomReplacement
             
         public override string Name => "MERRoomReplacement";
         
-        public override string Author => "FakeMan";
-
-        public override string Prefix => "room_replacement";
+        public override string Author => "FakeMan. Ported by BlackSerperior6";
 
         public override Version Version => new(1, 3, 1);
-        
-        public override void OnEnabled()
-        {
-            base.OnEnabled();
 
+        public override string Description => "LabAPI port of MERRoomReplacement";
+
+        public override Version RequiredApiVersion => LabApi.Features.LabApiProperties.CurrentVersion;
+
+        public override void Enable()
+        {
             _replacementHandler = new ReplacementHandler(
                 Config.ReplacementOptions.Where(x => x.IsEnabled));
 
             _replacementHandler.SubscribeEvents();
         }
 
-        public override void OnDisabled()
+        public override void Disable()
         {
-            base.OnDisabled();
-            
             _replacementHandler?.UnsubscribeEvents();
         }
     }

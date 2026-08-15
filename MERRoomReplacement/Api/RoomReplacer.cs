@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Exiled.API.Enums;
-using Exiled.API.Features;
-using MapEditorReborn.API;
-using MapEditorReborn.API.Features;
-using MapEditorReborn.API.Features.Objects;
-using MapEditorReborn.API.Features.Serializable;
+using LabApi.Features.Wrappers;
+using MapGeneration;
 using MEC;
 using MERRoomReplacement.Api.Structures;
+using ProjectMER.Features;
+using ProjectMER.Features.Objects;
 using UnityEngine;
 using Vector3 = UnityEngine.Vector3;
 
@@ -15,11 +13,11 @@ namespace MERRoomReplacement.Api;
 
 public static class RoomReplacer
 {
-    private static readonly IDictionary<RoomType, CachedRoom> RoomsTransformDataCache;
+    private static readonly IDictionary<RoomName, CachedRoom> RoomsTransformDataCache;
 
     static RoomReplacer()
     {
-        RoomsTransformDataCache = new Dictionary<RoomType, CachedRoom>();
+        RoomsTransformDataCache = new Dictionary<RoomName, CachedRoom>();
     }
 
     /// <summary>
@@ -30,11 +28,11 @@ public static class RoomReplacer
     /// <returns>
     ///     <see cref="SchematicObject" />
     /// </returns>
-    public static SchematicObject ReplaceRoom(RoomType roomType, RoomSchematic roomSchematic)
+    public static SchematicObject ReplaceRoom(RoomName roomType, RoomSchematic roomSchematic)
     {
-        var room = Room.Get(roomType);
+        var room = Room.Get(roomType).FirstOrDefault();
 
-        var schematicPosition = roomSchematic.PositionOffset.ToUnityEngineVector();
+        var schematicPosition = room.Position + roomSchematic.PositionOffset.ToUnityEngineVector();
         var schematicRotation = roomSchematic.RotationOffset.ToUnityEngineVector();
 
         if (room == null)
@@ -46,15 +44,11 @@ public static class RoomReplacer
         }
         
         DestroyRoom(room);
+
+        var schematic = ObjectSpawner.SpawnSchematic(roomSchematic.SchematicName, schematicPosition, 
+            Quaternion.Euler(schematicRotation + room.Transform.localRotation.eulerAngles));
         
-        var schematicSerializable = new SchematicSerializable(roomSchematic.SchematicName);
-        var rotation = Quaternion.Euler(schematicRotation + room.transform.localRotation.eulerAngles);
-        var schematic = ObjectSpawner.SpawnSchematic(schematicSerializable, schematicPosition, rotation);
-        schematic.Position += schematicPosition;
-        
-        Log.Debug($"[{roomType}->{roomSchematic.SchematicName}] Schematic spawned at {schematic.Position}");
-        
-        API.SpawnedObjects.Add(schematic);
+        LabApi.Features.Console.Logger.Debug($"[{roomType}->{roomSchematic.SchematicName}] Schematic spawned at {schematic.Position}");
 
         var roomDetails = new CachedRoom(room.Position, room.Rotation.eulerAngles, schematic);
 
@@ -75,14 +69,14 @@ public static class RoomReplacer
     /// <param name="roomType">Room that should be replaced</param>
     /// <param name="roomSchematic">Replacement options</param>
     /// <param name="delay">Delay in seconds until replacement</param>
-    public static void ReplaceRoom(RoomType roomType, RoomSchematic roomSchematic, float delay)
+    public static void ReplaceRoom(RoomName roomType, RoomSchematic roomSchematic, float delay)
     {
-        Log.Debug($"[{roomType}->{roomSchematic.SchematicName}] Starting replacement coroutine with {delay} seconds delay");
+        LabApi.Features.Console.Logger.Debug($"[{roomType}->{roomSchematic.SchematicName}] Starting replacement coroutine with {delay} seconds delay");
         
         Timing.CallDelayed(delay, () =>
         {
             
-            Log.Debug($"[{roomType}->{roomSchematic.SchematicName}] Coroutine: Replacing...");
+            LabApi.Features.Console.Logger.Debug($"[{roomType}->{roomSchematic.SchematicName}] Coroutine: Replacing...");
             
             _ = ReplaceRoom(roomType, roomSchematic);
         });
@@ -97,25 +91,11 @@ public static class RoomReplacer
     /// <param name="room">Room that should be destroyed</param>
     public static void DestroyRoom(Room room)
     {
-        foreach (var component in room.gameObject.GetComponentsInChildren<Component>())
+        foreach (var component in room.GameObject.GetComponentsInChildren<Component>())
             try
             {
-                if (component.name.Contains("SCP-079") || component.name.Contains("CCTV"))
-                {
-                    Log.Debug(
-                        $"Prevent from destroying: {component.name} {component.tag} {component.GetType().FullName}");
-                    continue;
-                }
 
-                if (component.GetComponentsInParent<Component>()
-                    .Any(c => c.name.Contains("SCP-079") || c.name.Contains("CCTV")))
-                {
-                    Log.Debug(
-                        $"Prevent from destroying: {component.name} {component.tag} {component.GetType().FullName}");
-                    continue;
-                }
-
-                Log.Debug($"Destroying component: {component.name} {component.tag} {component.GetType().FullName}");
+                LabApi.Features.Console.Logger.Debug($"Destroying component: {component.name} {component.tag} {component.GetType().FullName}");
 
                 Object.Destroy(component);
             }
@@ -125,7 +105,7 @@ public static class RoomReplacer
             }
     }
 
-    private static bool TryReplaceCachedRoom(RoomType roomType, RoomSchematic roomSchematic, Vector3 schematicPosition,
+    private static bool TryReplaceCachedRoom(RoomName roomType, RoomSchematic roomSchematic, Vector3 schematicPosition,
         Vector3 schematicRotation, out CachedRoom cachedRoomData)
     {
         if (!RoomsTransformDataCache.TryGetValue(roomType, out cachedRoomData))
@@ -135,13 +115,9 @@ public static class RoomReplacer
         schematicRotation += cachedRoomData.Rotation;
 
         cachedRoomData.Schematic.Destroy();
-        API.SpawnedObjects.Remove(cachedRoomData.Schematic);
         
-        var schematic = new SchematicSerializable(roomSchematic.SchematicName);
-        
-        cachedRoomData.Schematic = ObjectSpawner.SpawnSchematic(schematic,
+        cachedRoomData.Schematic = ObjectSpawner.SpawnSchematic(roomSchematic.SchematicName,
             schematicPosition, Quaternion.Euler(schematicRotation));
-        API.SpawnedObjects.Add(cachedRoomData.Schematic);
 
         return false;
     }

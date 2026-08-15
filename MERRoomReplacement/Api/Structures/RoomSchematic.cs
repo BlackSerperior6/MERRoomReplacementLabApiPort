@@ -1,5 +1,5 @@
-﻿using System.ComponentModel;
-using Exiled.API.Enums;
+﻿using MapGeneration;
+using System.ComponentModel;
 
 namespace MERRoomReplacement.Api.Structures;
 
@@ -9,7 +9,7 @@ public struct RoomSchematic
     public bool IsEnabled { get; set; }
     
     [Description("Room for replacement")]
-    public RoomType TargetRoomType { get; set; } 
+    public RoomName TargetRoomType { get; set; } 
     
     [Description("Schematic that will be used")]
     public string SchematicName { get; set; }

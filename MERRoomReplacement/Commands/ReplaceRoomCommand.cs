@@ -1,10 +1,9 @@
 ﻿using System;
 using CommandSystem;
-using Exiled.API.Enums;
-using Exiled.Permissions.Extensions;
-using MapEditorReborn.API.Features;
+using MapGeneration;
 using MERRoomReplacement.Api;
 using MERRoomReplacement.Api.Structures;
+using ProjectMER.Features;
 
 // ReSharper disable HeuristicUnreachableCode
 // ReSharper disable ConditionIsAlwaysTrueOrFalse
@@ -26,9 +25,9 @@ public class ReplaceRoomCommand : ICommand, IUsageProvider
 
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        if (!sender.CheckPermission("mp.roomreplacement"))
+        if (!sender.CheckPermission(PlayerPermissions.Noclip))
         {
-            response = "You must have 'mp.roomreplacement' permission to execute this command";
+            response = "You must have 'Noclip' permission to execute this command";
             return false;
         }
 
@@ -40,7 +39,7 @@ public class ReplaceRoomCommand : ICommand, IUsageProvider
 
         var roomName = arguments.At(0);
 
-        if (!Enum.TryParse(roomName, out RoomType roomType))
+        if (!Enum.TryParse(roomName, out RoomName roomType))
         {
             response = "Room not found";
             return false;

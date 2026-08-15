@@ -1,4 +1,4 @@
-﻿using MapEditorReborn.API.Features.Objects;
+﻿using ProjectMER.Features.Objects;
 
 namespace MERRoomReplacement.Api.Structures;
 
